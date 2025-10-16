@@ -1,0 +1,18 @@
+{
+  "name": "tipo-de-cambio",
+  "version": "1.0.0",
+  "description": "BCCR Exchange Rate Display with CORS Proxy",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["bccr", "exchange-rate", "costa-rica", "proxy"],
+  "author": "Daniel Arrieta",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "https": "^1.0.0"
+  }
+}

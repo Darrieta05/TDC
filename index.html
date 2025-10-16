@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<title>Tipo de Cambio</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background: #f5f5f5;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+		}
+		.box {
+			background: #fff;
+			border: 2px solid #0078d4;
+			border-radius: 8px;
+			padding: 32px 48px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+			font-size: 1.5rem;
+			color: #333;
+			margin-top: 24px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Tipo de Cambio</h1>
+	<div class="box" id="compra">Cargando compra ...</div>
+	<div class="box" id="venta">Cargando venta ...</div>
+
+	<script>
+	(function(){
+		// BCCR API Configuration
+		const BCCR_ENDPOINT = '/api/indicadores';
+		// const BCCR_ENDPOINT = 'https://gee.bccr.fi.cr/Indicadores/Suscripciones/WS/wsindicadoreseconomicos.asmx/ObtenerIndicadoresEconomicos';
+		const TOKEN = 'M06AOT01C5';
+		const EMAIL = 'darrieta525@gmail.com';
+		const NOMBRE = 'Daniel Arrieta';
+
+		// Get today's date in DD/MM/YYYY format
+		function todayDDMMYYYY() {
+			const d = new Date();
+			const dd = String(d.getDate()).padStart(2, '0');
+			const mm = String(d.getMonth() + 1).padStart(2, '0');
+			const yyyy = d.getFullYear();
+			return `${dd}/${mm}/${yyyy}`;
+		}
+
+		// HTTP GET request using fetch
+		function httpGet(url) {
+			return fetch(url, {
+				method: 'GET',
+				mode: 'cors',
+				headers: {
+					'Accept': 'application/xml, text/xml, */*',
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
+				credentials: 'omit'
+			}).then(res => res.text());
+		}
+
+		// Parse BCCR XML response
+		function parseXml(xml) {
+			const itemRegex = /<INGC011_CAT_INDICADORECONOMIC[^>]*>([\s\S]*?)<\/INGC011_CAT_INDICADORECONOMIC>/g;
+			const valueRegex = /<NUM_VALOR>([\s\S]*?)<\/NUM_VALOR>/;
+			const items = [];
+			let match;
+			
+			while ((match = itemRegex.exec(xml)) !== null) {
+				const block = match[1];
+				const valueMatch = valueRegex.exec(block);
+				if (valueMatch) {
+					items.push({
+						valor: parseFloat(valueMatch[1].trim())
+					});
+				}
+			}
+			return items;
+		}
+
+		// Fetch indicator from BCCR
+		function fetchIndicator(indicador) {
+			const today = todayDDMMYYYY();
+			const params = new URLSearchParams({
+				Indicador: indicador,
+				FechaInicio: today,
+				FechaFinal: today,
+				Nombre: NOMBRE,
+				SubNiveles: 'N',
+				Token: TOKEN,
+				CorreoElectronico: EMAIL
+			});
+			const url = `${BCCR_ENDPOINT}?${params.toString()}`;
+			return httpGet(url).then(parseXml);
+		}
+
+		// Display results
+		const compraEl = document.getElementById('compra');
+		const ventaEl = document.getElementById('venta');
+
+		function formatValue(items) {
+			if (!items || !items.length) return 'Sin datos';
+			return items[0].valor.toFixed(2);
+		}
+
+		// Fetch both indicators
+		fetchIndicator('317')
+			.then(items => { 
+				compraEl.innerHTML = '<strong>Compra</strong><br>₡' + formatValue(items); 
+			})
+			.catch(e => { 
+				compraEl.textContent = 'Error: ' + e.message; 
+			});
+
+		fetchIndicator('318')
+			.then(items => { 
+				ventaEl.innerHTML = '<strong>Venta</strong><br>₡' + formatValue(items); 
+			})
+			.catch(e => { 
+				ventaEl.textContent = 'Error: ' + e.message; 
+			});
+	})();
+	</script>
+</body>
+</html>
